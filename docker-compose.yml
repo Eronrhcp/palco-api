@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: palco-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: palco
+      POSTGRES_USER: palco
+      POSTGRES_PASSWORD: palco_dev_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - palco_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  palco_postgres_data:
