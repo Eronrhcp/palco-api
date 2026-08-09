@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/palco
+    username: palco
+    password: palco_dev_local
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
