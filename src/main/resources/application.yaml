@@ -7,3 +7,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+jwt:
+  secret: uma-chave-bem-longa-e-aleatoria-apenas-para-desenvolvimento-local
+  expiracao-access-token: 1800000
+  expiracao-refresh-token: 604800000
