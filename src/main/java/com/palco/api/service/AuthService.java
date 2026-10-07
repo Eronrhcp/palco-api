@@ -8,10 +8,14 @@ import com.palco.api.dto.response.UsuarioResponse;
 import com.palco.api.exception.CredenciaisInvalidasException;
 import com.palco.api.exception.EmailJaCadastradoException;
 import com.palco.api.exception.TokenInvalidoException;
+import com.palco.api.model.RefreshToken;
 import com.palco.api.model.Usuario;
+import com.palco.api.repository.RefreshTokenRepository;
 import com.palco.api.repository.UsuarioRepository;
 import com.palco.api.security.JwtService;
+import com.palco.api.security.TokenHasher;
 import io.jsonwebtoken.JwtException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +28,11 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenHasher tokenHasher;
+
+    private static final String MENSAGEM_TOKEN_INVALIDO =
+            "Refresh token inválido, expirado, revogado ou já utilizado";
 
     public UsuarioResponse registrar(RegistroRequest request) {
         Optional<Usuario> usuarioExistente = usuarioRepository.findByEmail(request.getEmail());
@@ -57,7 +66,7 @@ public class AuthService {
         }
 
         String accessToken = jwtService.gerarAccessToken(usuarioEncontrado.getEmail());
-        String refreshToken = jwtService.gerarRefreshToken(usuarioEncontrado.getEmail());
+        String refreshToken = gerarESalvarRefreshToken(usuarioEncontrado);
 
         TokenResponse tokenResponse = new TokenResponse();
         tokenResponse.setAccessToken(accessToken);
@@ -67,25 +76,47 @@ public class AuthService {
         return tokenResponse;
     }
 
+    @Transactional
     public TokenResponse refresh(RefreshTokenRequest request) {
-        String email;
-        try {
-            email = jwtService.extrairEmail(request.getRefreshToken());
+        String token = request.getRefreshToken();
 
+        boolean tipoValido;
+        try {
+            tipoValido = jwtService.isRefreshToken(token);
         } catch (JwtException e) {
-            throw new TokenInvalidoException("Refresh token inválido, expirado, revogado ou já utilizado");
+            throw new TokenInvalidoException(MENSAGEM_TOKEN_INVALIDO);
         }
 
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new TokenInvalidoException("Refresh token inválido, expirado, revogado ou já utilizado"));
+        if (!tipoValido) {
+            throw new TokenInvalidoException(MENSAGEM_TOKEN_INVALIDO);
+        }
+
+        RefreshToken registro = refreshTokenRepository.findByTokenHash(tokenHasher.hash(token))
+                .orElseThrow(() -> new TokenInvalidoException(MENSAGEM_TOKEN_INVALIDO));
+
+        Usuario usuario = registro.getUsuario();
+        refreshTokenRepository.delete(registro);
 
         String accessToken = jwtService.gerarAccessToken(usuario.getEmail());
+        String novoRefreshToken = gerarESalvarRefreshToken(usuario);
 
         TokenResponse tokenResponse = new TokenResponse();
         tokenResponse.setAccessToken(accessToken);
-        tokenResponse.setRefreshToken(request.getRefreshToken());
+        tokenResponse.setRefreshToken(novoRefreshToken);
         tokenResponse.setExpiraEm(jwtService.getExpiracaoAccessTokenEmSegundos());
 
         return tokenResponse;
+    }
+
+    private String gerarESalvarRefreshToken(Usuario usuario) {
+        String token = jwtService.gerarRefreshToken(usuario.getEmail());
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setUsuario(usuario);
+        refreshToken.setTokenHash(tokenHasher.hash(token));
+        refreshToken.setExpiraEm(jwtService.extrairExpiracao(token));
+        refreshTokenRepository.save(refreshToken);
+
+        return token;
     }
 }
