@@ -8,5 +8,5 @@ import lombok.Setter;
 public class TokenResponse {
     private String accessToken;
     private String refreshToken;
-    private Integer expiraEm;
+    private Long expiraEm;
 }

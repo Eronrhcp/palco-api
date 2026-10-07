@@ -52,4 +52,8 @@ public class JwtService {
 
         return claims.getSubject();
     }
+
+    public Long getExpiracaoAccessTokenEmSegundos() {
+        return jwtExpiracaoAccessToken/1000;
+    }
 }
