@@ -73,11 +73,11 @@ public class AuthService {
             email = jwtService.extrairEmail(request.getRefreshToken());
 
         } catch (JwtException e) {
-            throw new TokenInvalidoException("Refresh token inválido ou expirado");
+            throw new TokenInvalidoException("Refresh token inválido, expirado, revogado ou já utilizado");
         }
 
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new TokenInvalidoException("Refresh token inválido ou expirado"));
+                .orElseThrow(() -> new TokenInvalidoException("Refresh token inválido, expirado, revogado ou já utilizado"));
 
         String accessToken = jwtService.gerarAccessToken(usuario.getEmail());
 
