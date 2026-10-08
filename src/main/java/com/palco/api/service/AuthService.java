@@ -119,4 +119,10 @@ public class AuthService {
 
         return token;
     }
+
+    public void logout(RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+        refreshTokenRepository.findByTokenHash(tokenHasher.hash(token))
+                .ifPresent(refreshTokenRepository::delete);
+    }
 }
