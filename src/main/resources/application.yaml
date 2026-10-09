@@ -11,3 +11,6 @@ jwt:
   secret: uma-chave-bem-longa-e-aleatoria-apenas-para-desenvolvimento-local
   expiracao-access-token: 1800000
   expiracao-refresh-token: 604800000
+server:
+  servlet:
+    context-path: /v1
