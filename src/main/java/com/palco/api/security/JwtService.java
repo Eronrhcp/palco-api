@@ -80,6 +80,10 @@ public class JwtService {
         return TIPO_REFRESH.equals(extrairTipo(token));
     }
 
+    public boolean isAccessToken(String token) {
+        return TIPO_ACCESS.equals(extrairTipo(token));
+    }
+
     public LocalDateTime extrairExpiracao(String token) {
         Date expiracao = extrairClaims(token).getExpiration();
         Instant instante = expiracao.toInstant();
